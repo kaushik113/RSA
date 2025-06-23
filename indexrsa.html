@@ -425,38 +425,67 @@
                 return;
             }
             
+            if (globalState.n === 0) {
+                alert('Please generate RSA keys first!');
+                return;
+            }
+            
             const k = parseInt(document.getElementById('blockSize').value);
+            if (!k || k < 1) {
+                alert('Block size must be at least 1!');
+                return;
+            }
+            
             globalState.blockSize = k;
             globalState.blocks = [];
             
             let resultHTML = '<h3>Block Formation:</h3>';
             resultHTML += `<div class="math-step">Formula: M = c₁×256^(k-1) + c₂×256^(k-2) + ... + cₖ×256⁰</div>`;
+            resultHTML += `<div class="math-step">Block size: ${k} characters per block</div>`;
             
+            let blockNumber = 1;
             for (let i = 0; i < globalState.charCodes.length; i += k) {
                 let blockChars = globalState.charCodes.slice(i, i + k);
                 let M = 0;
                 let calculation = '';
+                let charDisplay = '';
                 
                 for (let j = 0; j < blockChars.length; j++) {
                     const power = blockChars.length - 1 - j;
                     const term = blockChars[j] * Math.pow(256, power);
                     M += term;
                     
-                    if (j > 0) calculation += ' + ';
+                    if (j > 0) {
+                        calculation += ' + ';
+                        charDisplay += ', ';
+                    }
                     calculation += `${blockChars[j]}×256^${power}`;
+                    charDisplay += `'${String.fromCharCode(blockChars[j])}'(${blockChars[j]})`;
                 }
                 
                 if (M >= globalState.n) {
-                    resultHTML += `<div class="warning">⚠️ Block ${M} ≥ n (${globalState.n}). Try smaller block size or different primes!</div>`;
+                    resultHTML += `<div class="warning">⚠️ Block value ${M} ≥ modulus n (${globalState.n})<br>`;
+                    resultHTML += `Solution: Use smaller block size or larger primes!</div>`;
+                    document.getElementById('blockResult').innerHTML = resultHTML;
                     return;
                 }
                 
                 globalState.blocks.push(M);
                 
                 resultHTML += `<div class="result">`;
-                resultHTML += `Block ${Math.floor(i/k) + 1}: [${blockChars.join(', ')}] → ${calculation} = ${M}<br>`;
+                resultHTML += `<strong>Block ${blockNumber}:</strong> [${charDisplay}]<br>`;
+                resultHTML += `Calculation: ${calculation}<br>`;
+                resultHTML += `Result: M = ${M} < n (${globalState.n}) ✓<br>`;
                 resultHTML += `</div>`;
+                
+                blockNumber++;
             }
+            
+            resultHTML += `<div class="result success">`;
+            resultHTML += `<strong>📦 All Blocks Formed Successfully!</strong><br>`;
+            resultHTML += `Total blocks: ${globalState.blocks.length}<br>`;
+            resultHTML += `Block values: [${globalState.blocks.join(', ')}]`;
+            resultHTML += `</div>`;
             
             document.getElementById('blockResult').innerHTML = resultHTML;
             updateProgress(3);
